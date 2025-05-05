@@ -49,16 +49,16 @@ trace_df_filtered = trace_df[trace_df['exporter'].isin(selected_exporters)]
 # --- Merge area info from farmers ---
 farmers_df['farmer_id'] = farmers_df['farmer_id'].str.strip().str.lower()
 trace_df['farmer_id'] = trace_df['farmer_id'].str.strip().str.lower()
-trace_df = trace_df.merge(farmers_df[['farmer_id', 'area']], on='farmer_id', how='left')
+trace_df = trace_df.merge(farmers_df[['farmer_id', 'area_ha']], on='farmer_id', how='left')
 
 # --- Filter 2: Area ---
 st.sidebar.subheader("Filter by Farm Area (ha)")
-min_area = float(trace_df['area'].min())
-max_area = float(trace_df['area'].max())
+min_area = float(trace_df['area_ha'].min())
+max_area = float(trace_df['area_ha'].max())
 selected_area_min = st.sidebar.slider("Min Area", min_value=0.0, max_value=max_area, value=min_area)
 
 # --- Apply area filter to already-exporter-filtered dataset ---
-trace_df_filtered = trace_df_filtered[trace_df_filtered['area'] >= selected_area_min]
+trace_df_filtered = trace_df_filtered[trace_df_filtered['area_ha'] >= selected_area_min]
 
 
 # --- Main Dashboard ---
