@@ -1,0 +1,7 @@
+streamlit
+supabase
+pandas
+fpdf
+Pillow
+altair
+openpyxl
