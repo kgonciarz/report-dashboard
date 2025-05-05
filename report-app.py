@@ -41,29 +41,29 @@ trace_df['purchase_date'] = pd.to_datetime(trace_df['purchase_date'], errors='co
 trace_df['net_weight_kg'] = pd.to_numeric(trace_df['net_weight_kg'], errors='coerce')
 quota_df['quota_used_pct'] = pd.to_numeric(quota_df['quota_used_pct'], errors='coerce')
 
+# --- Normalize farmer_id before merge ---
+farmers_df['farmer_id'] = farmers_df['farmer_id'].str.strip().str.lower()
+trace_df['farmer_id'] = trace_df['farmer_id'].str.strip().str.lower()
+
 # --- Filter 1: Exporter ---
 exporters = trace_df['exporter'].dropna().unique()
 selected_exporters = st.sidebar.multiselect("Select Exporter", exporters, default=list(exporters))
 trace_df_filtered = trace_df[trace_df['exporter'].isin(selected_exporters)]
 
-# --- Merge area info from farmers ---
-farmers_df['farmer_id'] = farmers_df['farmer_id'].str.strip().str.lower()
-trace_df['farmer_id'] = trace_df['farmer_id'].str.strip().str.lower()
-trace_df = trace_df.merge(farmers_df[['farmer_id', 'area_ha']], on='farmer_id', how='left')
+# --- Merge area info ---
+trace_df_filtered = trace_df_filtered.merge(
+    farmers_df[['farmer_id', 'area']].rename(columns={'area': 'area_ha'}),
+    on='farmer_id',
+    how='left'
+)
 
 # --- Filter 2: Area ---
 st.sidebar.subheader("Filter by Farm Area (ha)")
-min_area = float(trace_df['area_ha'].min())
-max_area = float(trace_df['area_ha'].max())
+min_area = float(trace_df_filtered['area_ha'].min() or 0)
+max_area = float(trace_df_filtered['area_ha'].max() or 100)
 selected_area_min = st.sidebar.slider("Min Area", min_value=0.0, max_value=max_area, value=min_area)
 
-# --- Merge farmers into already-filtered dataset ---
-trace_df_filtered = trace_df_filtered.merge(farmers_df[['farmer_id', 'area_ha']], on='farmer_id', how='left')
-
-# --- Apply area filter ---
 trace_df_filtered = trace_df_filtered[trace_df_filtered['area_ha'] >= selected_area_min]
-
-
 
 # --- Main Dashboard ---
 st.title("📊 CloudIA Reporting Dashboard")
