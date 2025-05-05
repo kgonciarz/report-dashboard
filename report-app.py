@@ -57,8 +57,12 @@ min_area = float(trace_df['area_ha'].min())
 max_area = float(trace_df['area_ha'].max())
 selected_area_min = st.sidebar.slider("Min Area", min_value=0.0, max_value=max_area, value=min_area)
 
-# --- Apply area filter to already-exporter-filtered dataset ---
+# --- Merge farmers into already-filtered dataset ---
+trace_df_filtered = trace_df_filtered.merge(farmers_df[['farmer_id', 'area_ha']], on='farmer_id', how='left')
+
+# --- Apply area filter ---
 trace_df_filtered = trace_df_filtered[trace_df_filtered['area_ha'] >= selected_area_min]
+
 
 
 # --- Main Dashboard ---
