@@ -107,3 +107,9 @@ st.dataframe(trace_df_filtered, use_container_width=True)
 
 # --- Export CSV ---
 st.download_button("📥 Download CSV", trace_df_filtered.to_csv(index=False), "traceability_data.csv", "text/csv")
+# --- Debug view ---
+with st.expander("🧪 Raw data preview (debug)"):
+    st.write("Filtered traceability data:", trace_df_filtered)
+    st.write("Unique exporter list:", exporters)
+    st.write("Farmer sample with area_ha:", farmers_df[['farmer_id', 'area_ha']].head())
+
