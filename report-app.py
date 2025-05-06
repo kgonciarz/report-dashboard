@@ -40,7 +40,6 @@ farmers_df = load_farmers()
 trace_df['purchase_date'] = pd.to_datetime(trace_df['purchase_date'], errors='coerce')
 trace_df['net_weight_kg'] = pd.to_numeric(trace_df['net_weight_kg'], errors='coerce')
 quota_df['quota_used_pct'] = pd.to_numeric(quota_df['quota_used_pct'], errors='coerce')
-
 trace_df['farmer_id'] = trace_df['farmer_id'].astype(str).str.strip().str.lower()
 farmers_df['farmer_id'] = farmers_df['farmer_id'].astype(str).str.strip().str.lower()
 
@@ -49,7 +48,12 @@ exporters = trace_df['exporter'].dropna().unique()
 selected_exporters = st.sidebar.multiselect("Select Exporter", exporters, default=list(exporters))
 trace_df_filtered = trace_df[trace_df['exporter'].isin(selected_exporters)]
 
-# --- Merge area info from farmers ---
+# If empty after exporter filter
+if trace_df_filtered.empty:
+    st.warning("⚠️ No traceability data for the selected exporter(s).")
+    st.stop()
+
+# --- Merge area info ---
 trace_df_filtered = trace_df_filtered.merge(
     farmers_df[['farmer_id', 'area_ha']],
     on='farmer_id',
@@ -58,10 +62,18 @@ trace_df_filtered = trace_df_filtered.merge(
 
 # --- Filter 2: Area ---
 st.sidebar.subheader("Filter by Farm Area (ha)")
-min_area = float(trace_df_filtered['area_ha'].min())
-max_area = float(trace_df_filtered['area_ha'].max())
-selected_area_min = st.sidebar.slider("Min Area", min_value=0.0, max_value=max_area, value=min_area)
-trace_df_filtered = trace_df_filtered[trace_df_filtered['area_ha'] >= selected_area_min]
+if trace_df_filtered['area_ha'].notna().any():
+    min_area = float(trace_df_filtered['area_ha'].min())
+    max_area = float(trace_df_filtered['area_ha'].max())
+    selected_area_min = st.sidebar.slider("Min Area", min_value=0.0, max_value=max_area, value=min_area)
+    trace_df_filtered = trace_df_filtered[trace_df_filtered['area_ha'] >= selected_area_min]
+else:
+    st.warning("⚠️ No area data available. Area filter disabled.")
+    selected_area_min = None
+
+if trace_df_filtered.empty:
+    st.warning("⚠️ No data left after applying area filter.")
+    st.stop()
 
 # --- Main Dashboard ---
 st.title("📊 CloudIA Reporting Dashboard")
@@ -107,9 +119,9 @@ st.dataframe(trace_df_filtered, use_container_width=True)
 
 # --- Export CSV ---
 st.download_button("📥 Download CSV", trace_df_filtered.to_csv(index=False), "traceability_data.csv", "text/csv")
-# --- Debug view ---
+
+# --- Debug ---
 with st.expander("🧪 Raw data preview (debug)"):
-    st.write("Filtered traceability data:", trace_df_filtered)
+    st.write("Filtered traceability data:", trace_df_filtered.head())
     st.write("Unique exporter list:", exporters)
     st.write("Farmer sample with area_ha:", farmers_df[['farmer_id', 'area_ha']].head())
-
