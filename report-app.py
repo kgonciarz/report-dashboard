@@ -111,11 +111,12 @@ st.title("📊 CloudIA Reporting Dashboard")
 # --- KPI cards ---
 total_net_weight = trace_df_filtered['net_weight_kg'].sum()
 total_deliveries = len(trace_df_filtered)
-unique_farmers = trace_df_filtered['farmer_id'].nunique()
+total_area = trace_df_filtered['area_ha'].sum()
 
 col1, col2, col3 = st.columns(3)
 col1.metric("📦 Total Net Weight (kg)", f"{total_net_weight:,.0f}")
 col2.metric("🚚 Total Deliveries", f"{total_deliveries:,}")
+col3.metric("🌾 Total Area (ha)", f"{total_area:,.2f}")
 
 # --- Farmer Coverage Comparison ---
 st.subheader("👩‍🌾 Farmer Coverage Summary")
