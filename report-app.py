@@ -18,8 +18,20 @@ supabase = get_supabase()
 # --- Data Loaders ---
 @st.cache_data
 def load_traceability():
-    result = supabase.table("traceability").select("*").execute()
-    return pd.DataFrame(result.data)
+    page_size = 1000
+    offset = 0
+    all_rows = []
+
+    while True:
+        result = supabase.table("traceability").select("*").range(offset, offset + page_size - 1).execute()
+        rows = result.data
+        if not rows:
+            break
+        all_rows.extend(rows)
+        offset += page_size
+
+    return pd.DataFrame(all_rows)
+
 
 @st.cache_data
 def load_quota_view():
