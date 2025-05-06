@@ -102,7 +102,12 @@ col3.metric("👩‍🌾 Unique Farmers", f"{unique_farmers:,}")
 
 # --- Trend chart ---
 st.subheader("📈 Net Weight Over Time")
-weight_over_time = trace_df_filtered.groupby(trace_df_filtered['purchase_date'].dt.date)['net_weight_kg'].sum().reset_index()
+# Filtruj dane od 2024 roku
+filtered_for_chart = trace_df_filtered[trace_df_filtered['purchase_date'].dt.year >= 2024]
+
+# Grupuj tylko dane od 2024 roku
+weight_over_time = filtered_for_chart.groupby(filtered_for_chart['purchase_date'].dt.date)['net_weight_kg'].sum().reset_index()
+
 chart = alt.Chart(weight_over_time).mark_line().encode(
     x='purchase_date:T',
     y='net_weight_kg:Q'
