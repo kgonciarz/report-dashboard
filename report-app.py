@@ -160,6 +160,22 @@ st.subheader("🏅 Top 10 Farmers by Net Weight")
 top_farmers = trace_df_filtered.groupby('farmer_id')['net_weight_kg'].sum().sort_values(ascending=False).head(10).reset_index()
 st.bar_chart(top_farmers.set_index('farmer_id'))
 
+# --- Certification Share ---
+st.subheader("🏷️ Certification Distribution (%)")
+
+cert_counts = trace_df_filtered['certification'].value_counts(normalize=True).reset_index()
+cert_counts.columns = ['certification', 'percentage']
+cert_counts['percentage'] *= 100  # convert to percent
+
+cert_chart = alt.Chart(cert_counts).mark_bar().encode(
+    x=alt.X('certification:N', title='Certification'),
+    y=alt.Y('percentage:Q', title='Percentage'),
+    tooltip=['certification', alt.Tooltip('percentage:Q', format='.1f')]
+).properties(width=600, height=300)
+
+st.altair_chart(cert_chart, use_container_width=True)
+
+
 # --- Full Table View ---
 st.subheader("📋 Full Traceability Data")
 st.dataframe(trace_df_filtered, use_container_width=True)
