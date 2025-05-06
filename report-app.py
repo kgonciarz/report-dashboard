@@ -118,6 +118,18 @@ col1.metric("📦 Total Net Weight (kg)", f"{total_net_weight:,.0f}")
 col2.metric("🚚 Total Deliveries", f"{total_deliveries:,}")
 col3.metric("👩‍🌾 Unique Farmers", f"{unique_farmers:,}")
 
+# --- Farmer Coverage Comparison ---
+st.subheader("👩‍🌾 Farmer Coverage Summary")
+
+total_farmers_in_farmers = farmers_df['farmer_id'].nunique()
+total_farmers_in_trace = trace_df['farmer_id'].nunique()
+
+col4, col5, col6 = st.columns(3)
+col4.metric("🧾 Farmers in Traceability", f"{total_farmers_in_trace:,}")
+col5.metric("📋 Farmers in Farmers Table", f"{total_farmers_in_farmers:,}")
+col6.metric("📈 Coverage (%)", f"{(total_farmers_in_trace / total_farmers_in_farmers * 100):.1f}%" if total_farmers_in_farmers else "N/A")
+
+
 # --- Trend chart ---
 st.subheader("📈 Net Weight Over Time")
 # Filtruj dane od 2024 roku
