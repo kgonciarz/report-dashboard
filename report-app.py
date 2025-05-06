@@ -35,13 +35,31 @@ def load_traceability():
 
 @st.cache_data
 def load_quota_view():
-    result = supabase.table("quota_view").select("*").execute()
-    return pd.DataFrame(result.data)
+    page_size = 1000
+    offset = 0
+    all_rows = []
+    while True:
+        result = supabase.table("quota_view").select("*").range(offset, offset + page_size - 1).execute()
+        rows = result.data
+        if not rows:
+            break
+        all_rows.extend(rows)
+        offset += page_size
+    return pd.DataFrame(all_rows)
 
 @st.cache_data
 def load_farmers():
-    result = supabase.table("farmers").select("*").execute()
-    return pd.DataFrame(result.data)
+    page_size = 1000
+    offset = 0
+    all_rows = []
+    while True:
+        result = supabase.table("farmers").select("*").range(offset, offset + page_size - 1).execute()
+        rows = result.data
+        if not rows:
+            break
+        all_rows.extend(rows)
+        offset += page_size
+    return pd.DataFrame(all_rows)
 
 # --- Load data ---
 trace_df = load_traceability()
