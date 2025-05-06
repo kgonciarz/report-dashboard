@@ -116,7 +116,6 @@ unique_farmers = trace_df_filtered['farmer_id'].nunique()
 col1, col2, col3 = st.columns(3)
 col1.metric("📦 Total Net Weight (kg)", f"{total_net_weight:,.0f}")
 col2.metric("🚚 Total Deliveries", f"{total_deliveries:,}")
-col3.metric("👩‍🌾 Unique Farmers", f"{unique_farmers:,}")
 
 # --- Farmer Coverage Comparison ---
 st.subheader("👩‍🌾 Farmer Coverage Summary")
