@@ -175,6 +175,16 @@ cert_chart = alt.Chart(cert_counts).mark_bar().encode(
 
 st.altair_chart(cert_chart, use_container_width=True)
 
+# --- Certified Volumes by Certification ---
+st.subheader("📦 Certified Volumes (in MT)")
+
+volume_by_cert = trace_df_filtered.groupby('certification')['net_weight_kg'].sum().reset_index()
+volume_by_cert['volume_mt'] = (volume_by_cert['net_weight_kg'] / 1000).round(2)
+volume_by_cert = volume_by_cert[['certification', 'volume_mt']].sort_values(by='volume_mt', ascending=False)
+
+st.dataframe(volume_by_cert, use_container_width=True)
+
+
 
 # --- Full Table View ---
 st.subheader("📋 Full Traceability Data")
