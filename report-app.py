@@ -74,11 +74,18 @@ trace_df['farmer_id'] = trace_df['farmer_id'].astype(str).str.strip().str.lower(
 farmers_df['farmer_id'] = farmers_df['farmer_id'].astype(str).str.strip().str.lower()
 
 # --- Filter 1: Exporter ---
-# --- Filter 1: Exporter ---
-trace_df['exporter'] = trace_df['exporter'].astype(str).str.strip()
-exporters = trace_df['exporter'].replace('', pd.NA).dropna().unique()
-selected_exporters = st.sidebar.multiselect("Select Exporter", exporters, default=list(exporters))
-trace_df_filtered = trace_df[trace_df['exporter'].isin(selected_exporters)]
+# --- Filter 1: Exporter (multi-exporter aware) ---
+all_exporters = trace_df['exporter'].dropna().astype(str).str.split(",\s*")
+flat_exporters = sorted(set([e.strip() for sublist in all_exporters for e in sublist if e.strip()]))
+
+selected_exporters = st.sidebar.multiselect("Select Exporter", flat_exporters, default=flat_exporters)
+
+# Dopasuj jeśli wybrany eksporter jest zawarty w polu tekstowym
+def matches_any_exporter(val):
+    return any(sel in val for sel in selected_exporters)
+
+trace_df_filtered = trace_df[trace_df['exporter'].astype(str).apply(matches_any_exporter)]
+
 
 
 # If empty after exporter filter
