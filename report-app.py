@@ -74,9 +74,12 @@ trace_df['farmer_id'] = trace_df['farmer_id'].astype(str).str.strip().str.lower(
 farmers_df['farmer_id'] = farmers_df['farmer_id'].astype(str).str.strip().str.lower()
 
 # --- Filter 1: Exporter ---
-exporters = trace_df['exporter'].dropna().unique()
+# --- Filter 1: Exporter ---
+trace_df['exporter'] = trace_df['exporter'].astype(str).str.strip()
+exporters = trace_df['exporter'].replace('', pd.NA).dropna().unique()
 selected_exporters = st.sidebar.multiselect("Select Exporter", exporters, default=list(exporters))
 trace_df_filtered = trace_df[trace_df['exporter'].isin(selected_exporters)]
+
 
 # If empty after exporter filter
 if trace_df_filtered.empty:
