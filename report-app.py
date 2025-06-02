@@ -72,6 +72,8 @@ trace_df['net_weight_kg'] = pd.to_numeric(trace_df['net_weight_kg'], errors='coe
 quota_df['quota_used_pct'] = pd.to_numeric(quota_df['quota_used_pct'], errors='coerce')
 trace_df['farmer_id'] = trace_df['farmer_id'].astype(str).str.strip().str.lower()
 farmers_df['farmer_id'] = farmers_df['farmer_id'].astype(str).str.strip().str.lower()
+farmers_df = farmers_df.drop_duplicates(subset='farmer_id')
+
 
 # --- Filter 1: Exporter ---
 # --- Filter 1: Exporter (multi-exporter aware) ---
