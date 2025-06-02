@@ -127,7 +127,7 @@ if trace_df_filtered.empty:
 st.title("📊 CloudIA Reporting Dashboard")
 
 # --- KPI cards ---
-total_net_weight = trace_df_filtered['net_weight_kg'].sum()
+total_net_weight = trace_df['net_weight_kg'].sum()
 total_deliveries = len(trace_df)
 total_area = trace_df_filtered['area_ha'].sum()
 
