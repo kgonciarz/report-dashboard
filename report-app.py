@@ -61,6 +61,12 @@ def load_farmers():
         offset += page_size
     return pd.DataFrame(all_rows)
 
+@st.cache_data
+def get_total_traceability_count():
+    result = supabase.table("traceability").select("id", count="exact").execute()
+    return result.count
+
+
 # --- Load data ---
 trace_df = load_traceability()
 quota_df = load_quota_view()
@@ -127,7 +133,7 @@ total_area = trace_df_filtered['area_ha'].sum()
 
 col1, col2, col3 = st.columns(3)
 col1.metric("📦 Total Net Weight (kg)", f"{total_net_weight:,.0f}")
-col2.metric("🚚 Total Deliveries", f"{total_deliveries:,}")
+col2.metric("🚚 Total Deliveries", f"{get_total_traceability_count():,}")
 col3.metric("🌾 Total Area (ha)", f"{total_area:,.2f}")
 
 # --- Farmer Coverage Comparison ---
