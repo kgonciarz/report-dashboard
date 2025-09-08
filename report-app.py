@@ -66,6 +66,21 @@ def get_total_traceability_count():
     result = supabase.table("traceability").select("id", count="exact").execute()
     return result.count
 
+# --- Helpers & sanity check ---
+def ensure_col(df, col, default):
+    if col not in df.columns:
+        df[col] = default
+    return df
+
+# Optional debug toggle
+if st.sidebar.checkbox("Show raw columns/head (debug)"):
+    st.write("trace_df columns:", list(trace_df.columns)); st.write(trace_df.head())
+    st.write("quota_df columns:", list(quota_df.columns)); st.write(quota_df.head())
+    st.write("farmers_df columns:", list(farmers_df.columns)); st.write(farmers_df.head())
+
+# Optional: quick button to clear cached data during debugging
+if st.sidebar.button("Clear data cache"):
+    st.cache_data.clear()
 
 # --- Load data ---
 trace_df = load_traceability()
@@ -73,27 +88,58 @@ quota_df = load_quota_view()
 farmers_df = load_farmers()
 
 # --- Preprocess ---
+# --- Preprocess (robust) ---
+# Make sure required columns exist even if Supabase rows omitted keys
+trace_df = ensure_col(trace_df, 'purchase_date', pd.NaT)
+trace_df = ensure_col(trace_df, 'net_weight_kg', pd.NA)
+trace_df = ensure_col(trace_df, 'farmer_id', pd.NA)
+trace_df = ensure_col(trace_df, 'exporter', pd.NA)
+trace_df = ensure_col(trace_df, 'certification', pd.NA)
+
+quota_df = ensure_col(quota_df, 'quota_used_pct', pd.NA)
+quota_df = ensure_col(quota_df, 'quota_status', pd.NA)
+
+farmers_df = ensure_col(farmers_df, 'farmer_id', pd.NA)
+farmers_df = ensure_col(farmers_df, 'area_ha', pd.NA)
+
+# Coerce types safely
 trace_df['purchase_date'] = pd.to_datetime(trace_df['purchase_date'], errors='coerce')
 trace_df['net_weight_kg'] = pd.to_numeric(trace_df['net_weight_kg'], errors='coerce')
 quota_df['quota_used_pct'] = pd.to_numeric(quota_df['quota_used_pct'], errors='coerce')
+
+# Normalize IDs
 trace_df['farmer_id'] = trace_df['farmer_id'].astype(str).str.strip().str.lower()
 farmers_df['farmer_id'] = farmers_df['farmer_id'].astype(str).str.strip().str.lower()
 farmers_df = farmers_df.drop_duplicates(subset='farmer_id')
 
 
+
 # --- Filter 1: Exporter ---
 # --- Filter 1: Exporter (multi-exporter aware) ---
-all_exporters = trace_df['exporter'].dropna().astype(str).str.split(",\s*")
-flat_exporters = sorted(set([e.strip() for sublist in all_exporters for e in sublist if e.strip()]))
+# --- Filter 1: Exporter (multi-exporter aware, robust) ---
+all_exporters = (
+    trace_df['exporter']
+    .dropna()
+    .astype(str)
+    .str.split(r",\s*")         # split on commas
+)
 
-selected_exporters = st.sidebar.multiselect("Select Exporter", flat_exporters, default=flat_exporters)
+flat_exporters = sorted({e.strip() for sub in all_exporters for e in sub if e.strip()})
+selected_exporters = st.sidebar.multiselect(
+    "Select Exporter",
+    options=flat_exporters,
+    default=flat_exporters if flat_exporters else []
+)
 
-# Dopasuj jeśli wybrany eksporter jest zawarty w polu tekstowym
-def matches_any_exporter(val):
-    return any(sel in val for sel in selected_exporters)
+def matches_any_exporter(val: str) -> bool:
+    if not selected_exporters:   # if nothing to filter by, keep all rows
+        return True
+    if pd.isna(val):
+        return False
+    s = str(val)
+    return any(sel in s for sel in selected_exporters)
 
-trace_df_filtered = trace_df[trace_df['exporter'].astype(str).apply(matches_any_exporter)]
-
+trace_df_filtered = trace_df[trace_df['exporter'].apply(matches_any_exporter)]
 
 
 # If empty after exporter filter
@@ -149,18 +195,29 @@ col6.metric("📈 Coverage (%)", f"{(total_farmers_in_trace / total_farmers_in_f
 
 
 # --- Trend chart ---
+# --- Trend chart ---
 st.subheader("📈 Net Weight Over Time")
-# Filtruj dane od 2024 roku
-filtered_for_chart = trace_df_filtered[trace_df_filtered['purchase_date'].dt.year >= 2024]
 
-# Grupuj tylko dane od 2024 roku
-weight_over_time = filtered_for_chart.groupby(filtered_for_chart['purchase_date'].dt.date)['net_weight_kg'].sum().reset_index()
+if trace_df_filtered['purchase_date'].notna().any():
+    filtered_for_chart = trace_df_filtered[trace_df_filtered['purchase_date'].dt.year >= 2024]
+    if not filtered_for_chart.empty:
+        weight_over_time = (
+            filtered_for_chart
+            .groupby(filtered_for_chart['purchase_date'].dt.date, dropna=True)['net_weight_kg']
+            .sum()
+            .reset_index()
+            .rename(columns={'purchase_date': 'date'})
+        )
+        chart = alt.Chart(weight_over_time).mark_line().encode(
+            x=alt.X('date:T', title='Purchase Date'),
+            y=alt.Y('net_weight_kg:Q', title='Net Weight (kg)')
+        ).properties(width=800, height=300)
+        st.altair_chart(chart, use_container_width=True)
+    else:
+        st.info("No records from 2024 onward to chart.")
+else:
+    st.info("No valid purchase dates to chart.")
 
-chart = alt.Chart(weight_over_time).mark_line().encode(
-    x='purchase_date:T',
-    y='net_weight_kg:Q'
-).properties(width=800, height=300)
-st.altair_chart(chart, use_container_width=True)
 
 # --- Quota Status Pie ---
 st.subheader("✅ Quota Compliance Status")
