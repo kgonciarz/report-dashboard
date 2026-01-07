@@ -3,6 +3,8 @@ import pandas as pd
 import altair as alt
 from supabase import create_client
 from datetime import datetime
+from postgrest.exceptions import APIError
+
 
 st.set_page_config(layout="wide")
 
@@ -39,12 +41,32 @@ def load_quota_view():
     offset = 0
     all_rows = []
     while True:
-        result = supabase.table("quota_view").select("*").range(offset, offset + page_size - 1).execute()
-        rows = result.data
+        try:
+            result = (
+                supabase
+                .table("quota_view")
+                .select("*")
+                .range(offset, offset + page_size - 1)
+                .execute()
+            )
+        except APIError as e:
+            payload = e.args[0] if e.args else None
+            st.error("Failed to load quota_view (PostgREST APIError).")
+            st.write("Error payload:", payload)   # <-- THIS is the important part
+            st.write("Full exception:", repr(e))
+            st.stop()
+
+        rows = result.data or []
         if not rows:
             break
+
         all_rows.extend(rows)
+
+        if len(rows) < page_size:
+            break
+
         offset += page_size
+
     return pd.DataFrame(all_rows)
 
 @st.cache_data
