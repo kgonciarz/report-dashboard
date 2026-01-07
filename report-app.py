@@ -35,21 +35,30 @@ def load_traceability():
     return pd.DataFrame(all_rows)
 
 
-@st.cache_data
+from postgrest.exceptions import APIError
+
+@st.cache_data(show_spinner=False)
 def load_quota_view():
     page_size = 1000
     offset = 0
     all_rows = []
-    cols = "quota_status,quota_used_pct"  # only what you need
+    cols = "quota_status,quota_used_pct"
 
     while True:
-        result = (
-            supabase
-            .table("quota_view")
-            .select(cols)
-            .range(offset, offset + page_size - 1)
-            .execute()
-        )
+        try:
+            result = (
+                supabase
+                .table("quota_view")
+                .select(cols)
+                .range(offset, offset + page_size - 1)
+                .execute()
+            )
+        except APIError as e:
+            payload = e.args[0] if e.args else None
+            st.error("Failed to load quota_view (PostgREST APIError).")
+            st.write("Error payload:", payload)
+            st.write("Full exception:", repr(e))
+            st.stop()
 
         rows = result.data or []
         if not rows:
