@@ -40,21 +40,16 @@ def load_quota_view():
     page_size = 1000
     offset = 0
     all_rows = []
+    cols = "quota_status,quota_used_pct"  # only what you need
+
     while True:
-        try:
-            result = (
-                supabase
-                .table("quota_view")
-                .select("*")
-                .range(offset, offset + page_size - 1)
-                .execute()
-            )
-        except APIError as e:
-            payload = e.args[0] if e.args else None
-            st.error("Failed to load quota_view (PostgREST APIError).")
-            st.write("Error payload:", payload)   # <-- THIS is the important part
-            st.write("Full exception:", repr(e))
-            st.stop()
+        result = (
+            supabase
+            .table("quota_view")
+            .select(cols)
+            .range(offset, offset + page_size - 1)
+            .execute()
+        )
 
         rows = result.data or []
         if not rows:
@@ -68,6 +63,7 @@ def load_quota_view():
         offset += page_size
 
     return pd.DataFrame(all_rows)
+
 
 @st.cache_data
 def load_farmers():
